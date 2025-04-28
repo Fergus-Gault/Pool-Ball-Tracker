@@ -26,6 +26,8 @@ class Config:
         self.output_dimensions = (1200, 600)
         self.ball_area_range = (1500, 4500)
         self.arm_area_range = (10000, 20000)
+        self.gantry_effective_range_x_px = (100, 1100)
+        self.gantry_effective_range_y_px = (84, 516)
         self.use_hidden_balls = False
         self.use_model = True
         self.process_every_n_frames = 2

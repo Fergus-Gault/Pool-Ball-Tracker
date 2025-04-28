@@ -1,5 +1,6 @@
 import time
 import logging
+import numpy as np
 
 from core import config, state
 
@@ -32,6 +33,9 @@ class StateManager():
         num_balls = 0
         self.not_moved_counter = 0
 
+        x_ratio = np.divide(config.output_dimensions[0], (config.output_dimensions[0] - (2 * config.gantry_effective_range_x_px[0])))
+        y_ratio = np.divide(config.output_dimensions[1], (config.output_dimensions[1] - (2 * config.gantry_effective_range_y_px[0])))
+
         for ball in detections[0].boxes:
             classname, middlex, middley = self._get_ball_info(ball, labels)
             if classname in {"arm", "hole"}:
@@ -40,8 +44,12 @@ class StateManager():
             num_balls += 1
 
             if classname == "white":
-                # Handle offset
-                pass
+                corrected_middlex, corrected_middley = self._handle_offset(
+                    middlex, middley, x_ratio, y_ratio)
+                
+                corrected_white_ball.update({
+                    "x": corrected_middlex, 
+                    "y": corrected_middley}) 
 
             if self.previous_state and classname in self.previous_state:
                 for prev_ball in self.previous_state[classname]:
@@ -51,7 +59,9 @@ class StateManager():
                         prev_ball["y"] = middley
                         break
 
-            balls.setdefault(classname, []).append({"x": middlex, "y": middley})
+            balls.setdefault(classname, []).append(
+                {"x": middlex, 
+                 "y": middley})
 
         if self.not_moved_counter == num_balls:
             self.previous_state = balls
@@ -78,7 +88,7 @@ class StateManager():
     def _coords_clamped(self, x, y):
         x = max(0, min(x, config.output_dimensions[0]))
         y = max(0, min(y, config.output_dimensions[1]))
-        return x, y
+        return int(x), int(y)
     
     
     def _near_previous_position(self, prev_ball, x, y):
@@ -113,3 +123,25 @@ class StateManager():
             if corrected_white_ball:
                 logger.info(
                     f"Sending corrected white ball: {corrected_white_ball}")    
+                
+
+    def _handle_offset(self, middlex, middley, x_ratio, y_ratio):
+        corrected_middlex = self._handle_x_offset(middlex, x_ratio)
+        corrected_middley = self._handle_y_offset(middley, y_ratio)
+        corrected_middlex, corrected_middley = self._coords_clamped(
+            corrected_middlex, corrected_middley)
+        return corrected_middlex, corrected_middley
+
+    def _handle_x_offset(self, middlex, x_ratio):
+        if middlex > config.gantry_effective_range_x_px[1]:
+            return config.output_dimensions[0]
+        elif middlex < config.gantry_effective_range_x_px[0]:
+            return 0
+        return (middlex - config.gantry_effective_range_x_px[0]) * x_ratio
+    
+    def _handle_y_offset(self, middley, y_ratio):
+        if middley > config.gantry_effective_range_y_px[1]:
+            return config.output_dimensions[1]
+        elif middley < config.gantry_effective_range_y_px[0]:
+            return 0
+        return (middley - config.gantry_effective_range_y_px[0]) * y_ratio
