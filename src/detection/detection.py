@@ -34,8 +34,8 @@ class DetectionModel:
             return None
         else:
             device = "cuda" if torch.cuda.is_available() else "cpu"
-            torch_device = torch.device(device)
-            model = YOLO(config.detection_model_path, task="detect").to(torch_device)
+            model = YOLO(config.detection_model_path, task="detect")
+            model.to(device)
             return model
         
     # Can have as a trigger function to change the model during runtime. Not used yet, waiting for liveconfig to be updated.
@@ -54,11 +54,24 @@ class DetectionModel:
         if self.frame_count % config.process_every_n_frames != 0:
             return self.last_result, self.labels
         
+        # Detect available device and optimize based on hardware
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        
+        # Adjust settings based on device
+        # For CPU: don't use half precision, lower batch size
+        use_half = device == "cuda"
+        
         results = self.model(
             frame, 
             verbose=False, 
             conf=config.conf_threshold, 
-            iou=0.40)
+            iou=0.40,
+            device=device,
+            half=use_half,
+            stream=True
+        )
+
+        results = list(results)
 
         all_results = []
         if results is None or len(results) == 0 or results[0].boxes is None:

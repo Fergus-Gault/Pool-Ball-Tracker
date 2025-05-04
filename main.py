@@ -6,6 +6,7 @@ import numpy as np
 from core import config, state, state_manager, load_camera, parse_args, capture_frame
 from src.processing.camera_processing import get_top_down_view, handle_calibration, undistort_frame, manage_point_selection
 from src.detection.detection import DetectionModel
+import time
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -17,9 +18,11 @@ logging.basicConfig(
     ]
 )
 
-
 def main():
 
+    prev_frame_time = 0 
+
+    new_frame_time = 0
     args = parse_args()
     if not args.no_interface:
         start_interface("web")
@@ -81,6 +84,20 @@ def main():
                 processed_frame, 
                 detections)
             state.autoencoder.handle_obstruction_detection(table_only)
+
+        new_frame_time = time.time()
+        fps = 1 / (new_frame_time - prev_frame_time)
+        prev_frame_time = new_frame_time
+        fps = int(fps)
+        cv2.putText(processed_frame, 
+                    f"FPS: {fps}", 
+                    (10, 30), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 
+                    config.font_scale, 
+                    config.font_color, 
+                    config.font_thickness)
+        
+        cv2.imshow("Detection", processed_frame)
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break

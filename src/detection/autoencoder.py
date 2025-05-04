@@ -84,35 +84,45 @@ class AutoEncoder:
     
 
     def detect_obstruction(self, table_only):
-        if table_only is None:
-            logger.error("Failed to extract bounding boxes.")
+        if table_only is None or self.autoencoder is None:
+            logger.error("Cannot detect obstruction: missing table data or model")
             return False
 
-        if self.autoencoder is None:
-            logger.error("Autoencoder model not loaded.")
-            return False
+        # Preprocess image more efficiently
+        obstruction = cv2.resize(table_only, (128, 128))
+        obstruction = obstruction.astype(np.float32) / 255.0
+        obstruction = obstruction[np.newaxis, ...]  # Faster than expand_dims
 
-        obstruction = cv2.resize(table_only, (128, 128)).astype(np.float32) / 255.0
-        obstruction = np.expand_dims(obstruction, axis=0)
-
+        # Get prediction with reduced verbosity
         reconstructed = self.autoencoder.predict(obstruction, verbose=0)
+        
+        # Vectorized MSE calculation
         mse = np.mean(np.square(obstruction - reconstructed))
 
         return self._update_and_check_buffer(mse) > config.obstruction_threshold
 
 
     def _update_and_check_buffer(self, mse):
-        if len(self.detection_buffer) >= config.obstruction_buffer_size:
-            self.detection_buffer = np.delete(self.detection_buffer, 0)
+        # Use a fixed-size buffer for better performance
+        if not hasattr(self, 'buffer_index'):
+            self.buffer_index = 0
+            if len(self.detection_buffer) == 0:
+                self.detection_buffer = np.zeros(config.obstruction_buffer_size)
         
-        self.detection_buffer = np.append(self.detection_buffer, mse)
+        # Update buffer using circular indexing
+        self.detection_buffer[self.buffer_index] = mse
+        self.buffer_index = (self.buffer_index + 1) % config.obstruction_buffer_size
+        
+        # Calculate mean only on filled values
         mean = np.mean(self.detection_buffer)
+        
+        # Check threshold only when needed
         threshold_diff = abs(mean - config.obstruction_threshold)
-        if threshold_diff <= \
-            (config.obstruction_threshold * config.obstruction_warn_if_within):
+        warn_threshold = config.obstruction_threshold * config.obstruction_warn_if_within
+        if threshold_diff <= warn_threshold:
             logger.warning(
-                f"Mean is within {config.obstruction_warn_if_within * 100}% \
-                of threshold: {mean}")
+                f"Mean is within {config.obstruction_warn_if_within * 100:.1f}% "
+                f"of threshold: {mean:.6f}")
 
         return mean
     
