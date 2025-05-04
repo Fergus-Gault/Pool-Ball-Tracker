@@ -60,7 +60,6 @@ def load_camera():
         camera = cv2.VideoCapture(0, cv2.CAP_MSMF)
         camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
         camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-        camera.set(cv2.CAP_PROP_FPS, 60)
         time.sleep(2.0)
         return camera
     except Exception as e:
