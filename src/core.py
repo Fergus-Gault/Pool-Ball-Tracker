@@ -1,5 +1,6 @@
+from src.state import StateManager
 from liveconfig import liveinstance, trigger
-from src.config.config import Config
+from src.config import Config
 import argparse
 import logging
 import cv2
@@ -10,26 +11,30 @@ from random import randint
 config = liveinstance("config")(Config())
 logger = logging.getLogger(__name__)
 
+
 class State:
     def __init__(self):
         self.network = None
         self.autoencoder = None
 
+
+# Create the state instance
 state = State()
 
+if config.use_obstruction_detection:
+    from src.detection import AutoEncoder
+    state.autoencoder = AutoEncoder()
+
+# Initialize networking if needed
 if config.use_networking:
-    from src.networking.network import Network
+    from src.networking import Network
     state.network = Network()
     state.network.connect()
 
-if config.use_obstruction_detection:
-    from src.detection.autoencoder import AutoEncoder
-    state.autoencoder = AutoEncoder()
-
-
-state_manager = None
-from src.state.state import StateManager
+# Initialize the state manager
 state_manager = StateManager()
+state_manager.initialize(config, state)
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -40,7 +45,6 @@ def parse_args():
         help="The path to the image file."
     )
 
-
     parser.add_argument(
         "--no-interface",
         action="store_true",
@@ -48,7 +52,15 @@ def parse_args():
         default=False
     )
 
+    parser.add_argument(
+        "--camera-port",
+        type=int,
+        default=config.camera_port,
+        help="The camera port to use."
+    )
+
     return parser.parse_args()
+
 
 def load_camera():
     """
@@ -57,15 +69,17 @@ def load_camera():
     """
     try:
         logger.info("Starting camera...")
-        camera = cv2.VideoCapture(0, cv2.CAP_MSMF)
+        camera = cv2.VideoCapture(
+            config.camera_port, apiPreference=cv2.CAP_MSMF)
         camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
         camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+        camera.set(cv2.CAP_PROP_FPS, 30)
         time.sleep(2.0)
         return camera
     except Exception as e:
         logger.error(f"Error starting camera: {e}")
         return
-    
+
 
 def capture_frame(path, frame) -> None:
     """
@@ -92,13 +106,15 @@ def _capture_and_save(path, frame):
         time.sleep(0.1)
         logger.info(f"Image {num} saved")
 
+
 @trigger
 def start_network():
     if config.use_networking and state.network is None:
-        from src.networking.network import Network
+        from src.networking import Network
         logger.info("Starting network...")
         state.network = Network()
         state.network.connect()
+
 
 @trigger
 def stop_network():
@@ -106,10 +122,3 @@ def stop_network():
         logger.info("Stopping network...")
         state.network.disconnect()
         state.network = None
-
-@trigger
-def start_autoencoder():
-    if config.use_obstruction_detection and state.autoencoder is None:
-        from src.detection.autoencoder import AutoEncoder
-        logger.info("Starting autoencoder...")
-        state.autoencoder = AutoEncoder()

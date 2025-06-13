@@ -1,13 +1,20 @@
-keras==3.9.2
-liveconfig==0.2.0b0
+# Core image processing
+opencv-contrib-python==4.11.0.86  # Headless version is smaller than full version
+
+# Math and data processing
 numpy==1.26.2
-opencv-contrib-python==4.11.0.86
+
+# Machine learning - only what's needed for YOLO
+torch==2.6.0  # Required for YOLO
+ultralytics[yolo]==8.3.109  # Only YOLO components
+
+# Networking components
 python-socketio==5.13.0
-python-socketio-client==1.1
 requests==2.32.3
-setuptools==78.1.0
-tensorflow==2.19.0
-torch==2.6.0
-torchvision==0.21.0
-ultralytics==8.3.109
-ultralytics-thop==2.0.14
+
+# Config management
+liveconfig==0.2.1b0
+
+# Tensorflow components (minimal for autoencoder)
+tensorflow-cpu==2.19.0  # Using CPU-only version
+keras==3.9.2  # Required for autoencoder

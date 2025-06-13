@@ -3,6 +3,7 @@ from liveconfig import liveclass
 @liveclass
 class Config:
     def __init__(self):
+        self.camera_port = 0
         self.font_color = (255, 255, 255)
         self.font_scale = 0.5
         self.font_thickness = 1

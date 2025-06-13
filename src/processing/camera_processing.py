@@ -3,9 +3,11 @@ from cv2 import aruco
 import os
 import glob
 import json
-from core import config
 import logging
 import numpy as np
+
+# Import the config instance directly
+from src.core import config
 
 logger=  logging.getLogger(__name__)
 
@@ -241,4 +243,4 @@ def sort_points(table_pts):
     return [top_pts[0], top_pts[1], bottom_pts[0], bottom_pts[1]]
 
 
-        
+

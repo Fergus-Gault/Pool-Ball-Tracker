@@ -1,11 +1,13 @@
-from liveconfig import LiveConfig, start_interface
-LiveConfig("./src/data")
-import logging
-import cv2
+from src.processing import get_top_down_view, handle_calibration, undistort_frame, manage_point_selection
+from src.detection import DetectionModel
+from src import config, state, state_manager, load_camera, parse_args, capture_frame
+import time
 import numpy as np
-from core import config, state, state_manager, load_camera, parse_args, capture_frame
-from src.processing.camera_processing import get_top_down_view, handle_calibration, undistort_frame, manage_point_selection
-from src.detection.detection import DetectionModel
+import cv2
+import logging
+from liveconfig import LiveConfig, start_interface
+
+LiveConfig("./src/data")
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -20,7 +22,11 @@ logging.basicConfig(
 
 def main():
 
+    prev_frame_time = 0
+
+    new_frame_time = 0
     args = parse_args()
+    config.camera_port = args.camera_port
     if not args.no_interface:
         start_interface("web")
 
@@ -32,7 +38,7 @@ def main():
         if not ret:
             logger.error("Failed to read from camera.")
             return
-        
+
     processed_frame = frame
     mtx, dist, newcameramtx, roi = handle_calibration(frame)
     processed_frame = undistort_frame(frame, mtx, dist, newcameramtx, roi)
@@ -50,24 +56,26 @@ def main():
         ])
         homography_matrix = cv2.getPerspectiveTransform(table_pts, table_rect)
         processed_frame = get_top_down_view(processed_frame, homography_matrix)
-        
+
     detection_model = DetectionModel()
     if detection_model.model is None:
         return
-    
+
     while True:
 
         if args.file is None:
             ret, frame = camera.read()
             if frame is None:
                 logger.error("Failed to read from camera.")
-        
+
         processed_frame = frame
 
         if config.use_calibration:
-            processed_frame = undistort_frame(frame, mtx, dist, newcameramtx, roi)
+            processed_frame = undistort_frame(
+                frame, mtx, dist, newcameramtx, roi)
         if config.use_table_pts:
-            processed_frame = get_top_down_view(processed_frame, homography_matrix)
+            processed_frame = get_top_down_view(
+                processed_frame, homography_matrix)
         if config.collect_model_images or config.collect_ae_data:
             capture_frame(processed_frame)
 
@@ -75,23 +83,36 @@ def main():
         state_manager.update(detections, labels)
 
         if state.autoencoder is not None \
-            and config.use_obstruction_detection \
-            and config.use_model:
+                and config.use_obstruction_detection \
+                and config.use_model:
             table_only = detection_model.extract_bounding_boxes(
-                processed_frame, 
+                processed_frame,
                 detections)
             state.autoencoder.handle_obstruction_detection(table_only)
+
+        new_frame_time = time.time()
+        fps = 1 / (new_frame_time - prev_frame_time)
+        prev_frame_time = new_frame_time
+        fps = int(fps)
+        cv2.putText(processed_frame,
+                    f"FPS: {fps}",
+                    (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    config.font_scale,
+                    config.font_color,
+                    config.font_thickness)
+
+        cv2.imshow("Detection", processed_frame)
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
-        
     if args.file is None:
         camera.release()
     cv2.destroyAllWindows()
     if config.use_networking:
         state.network.disconnect()
-    
-    
+
+
 if __name__ == "__main__":
     main()

@@ -1,11 +1,13 @@
-from core import config
 import socketio
 import time
 import threading
 import logging
 from liveconfig import trigger
 
+from src.core import config
+
 logger = logging.getLogger(__name__)
+
 
 class Network:
     def __init__(self):
@@ -76,7 +78,6 @@ class Network:
                 logger.error(f"Reconnection failed: {e}")
                 time.sleep(3)
 
-
     def connect(self):
         threading.Thread(target=self._connect, daemon=True).start()
 
@@ -87,10 +88,8 @@ class Network:
             logger.error(f"Connection failed: {e}")
             self.reconnect()
 
-
     def _handle_request_positions(self, data):
         self.positions_requested = True
-
 
     def _handle_finished_move(self, data):
         self.finished_move_counter += 1
@@ -103,7 +102,6 @@ class Network:
         self.finished_hit = True
         logger.info("Hit finished, moving back to origin.")
 
-    
     def _handle_move(self, data) -> None:
         self.gantry_moving = True
         if (int(data['x']) == 0 and int(data['y'] == 0)):
@@ -141,7 +139,6 @@ class Network:
         except Exception as e:
             self._handle_error(e, "obstructionDetected")
             pass
-
 
     def disconnect(self):
         self.sio.disconnect()
