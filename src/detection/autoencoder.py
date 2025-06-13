@@ -31,7 +31,7 @@ class AutoEncoder:
         autoencoder.compile(optimizer='adam', loss='mse')
         autoencoder.summary()
 
-        clean_images = self._load_clean_images()
+        clean_images = self.load_images()
         if len(clean_images) == 0:
             logger.error("No clean images found for training.")
             return None
@@ -64,6 +64,7 @@ class AutoEncoder:
 
     def load_images(self):
         images = []
+        logger.info(config.ae_data_path)
         for filename in os.listdir(config.ae_data_path):
             if filename.endswith(".jpg"):
                 img = cv2.imread(os.path.join(config.ae_data_path, filename))

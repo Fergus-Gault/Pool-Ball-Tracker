@@ -1,14 +1,15 @@
 {
     "live_instances": {
         "config": {
+            "camera_port": "0",
             "font_color": "(255, 255, 255)",
             "font_scale": "0.5",
             "font_thickness": "1",
             "bbox_colors": "[(255, 0, 0), (0, 0, 0), (0, 165, 255), (0, 0, 255), (255, 255, 255), (0, 255, 255)]",
             "use_obstruction_detection": "False",
-            "autoencoder_model_path": "./model/autoencoder_model.keras",
+            "autoencoder_model_path": "./computer_vision/model/autoencoder_model.keras",
             "collect_ae_data": "False",
-            "ae_data_path": "./src/data/model/ae_data/",
+            "ae_data_path": "./computer_vision/src/data/model/ae_data/",
             "obstruction_threshold": "0.013",
             "obstruction_warn_if_within": "0.05",
             "obstruction_buffer_size": "4",
@@ -23,7 +24,7 @@
             "use_hidden_balls": "False",
             "use_model": "True",
             "process_every_n_frames": "1",
-            "detection_model_path": "./model/detection_model.pt",
+            "detection_model_path": "./computer_vision/model/detection_model.pt",
             "position_threshold": "6",
             "hole_threshold": "30",
             "conf_threshold": "0.5",
@@ -31,11 +32,11 @@
             "hide_windows": "False",
             "use_calibration": "True",
             "use_table_pts": "True",
-            "model_image_path": "./src/data/model/training_images/",
+            "model_image_path": "./computer_vision/src/data/model/training_images/",
             "collect_model_images": "False",
-            "calibration_params_path": "./src/data/camera_calibration.json",
-            "calibration_images_path": "./src/data/calibration_images/wide_angle_cam/",
-            "table_pts_path": "./src/data/table_pts.json"
+            "calibration_params_path": "./computer_vision/src/data/camera_calibration.json",
+            "calibration_images_path": "./computer_vision/src/data/calibration_images/wide_angle_cam/",
+            "table_pts_path": "./computer_vision/src/data/table_pts.json"
         }
     },
     "live_variables": {}

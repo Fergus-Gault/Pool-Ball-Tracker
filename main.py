@@ -7,7 +7,7 @@ import cv2
 import logging
 from liveconfig import LiveConfig, start_interface
 
-LiveConfig("./src/data")
+LiveConfig("./computer_vision/src/data")
 
 # Setup logger
 logger = logging.getLogger(__name__)

@@ -19,6 +19,10 @@ class StateManager():
         self.config = config
         self.state = state
         self.time_since_last_update = time.time() - config.network_update_interval
+        self.x_ratio = np.divide(self.config.output_dimensions[0], (
+            self.config.output_dimensions[0] - (2 * self.config.gantry_effective_range_x_px[0])))
+        self.y_ratio = np.divide(self.config.output_dimensions[1], (
+            self.config.output_dimensions[1] - (2 * self.config.gantry_effective_range_y_px[0])))
 
     def update(self, detections, labels):
         if not self.config or not self.state:
@@ -44,11 +48,6 @@ class StateManager():
         num_balls = 0
         self.not_moved_counter = 0
 
-        x_ratio = np.divide(self.config.output_dimensions[0], (
-            self.config.output_dimensions[0] - (2 * self.config.gantry_effective_range_x_px[0])))
-        y_ratio = np.divide(self.config.output_dimensions[1], (
-            self.config.output_dimensions[1] - (2 * self.config.gantry_effective_range_y_px[0])))
-
         for ball in detections[0].boxes:
             classname, middlex, middley = self._get_ball_info(ball, labels)
             if classname in {"arm", "hole"}:
@@ -58,7 +57,7 @@ class StateManager():
 
             if classname == "white":
                 corrected_middlex, corrected_middley = self._handle_offset(
-                    middlex, middley, x_ratio, y_ratio)
+                    middlex, middley, self.x_ratio, self.y_ratio)
 
                 corrected_white_ball.update({
                     "x": corrected_middlex,
