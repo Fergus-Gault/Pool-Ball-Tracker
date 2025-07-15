@@ -2,7 +2,7 @@
 
 ## Overview ##
 
-This project performs real-time pool ball detection using a YOLO12n model. It was built as part of the [Pool Pal](https://informatics.ed.ac.uk/news-events/latest-news/informatics-students-showcase-innovative-assistive-robotics-at-sdp-trade) project. This version is an expansion on the original software, adding improved performance, and greater customisability.
+This project performs real-time pool ball detection using a YOLO12n model. It was built as part of the [Pool Pal](https://github.com/fergus-gault/poolpal) project. This version is an expansion on the original software, adding improved performance, and greater customisability.
 
 ### Features ###
 
